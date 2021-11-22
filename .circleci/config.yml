@@ -1,26 +1,53 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
-
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+  build:
     docker:
-      - image: cimg/base:stable
-    # Add steps to the job
-    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+      - image: 'circleci/openjdk:11-jdk'
     steps:
       - checkout
       - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
-
-# Invoke jobs via workflows
-# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+          name: Analyze on SonarCloud
+          command: ""
+  eks-setup:
+    docker:
+      - image: 'circleci/openjdk:11-jdk'
+    steps:
+      - checkout
+      - run:
+          name: Install and Confgure kubectl plugin
+          command: sudo curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && sudo chmod +x /usr/local/bin/kubectl
+      - run:
+          name: Install Helm plugin
+          command: |
+            curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+            sudo apt-get install apt-transport-https --yes
+            echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+            sudo apt-get update
+            sudo apt-get install helm
+      - run:
+          name: Decrypt the Encrypted Kubeconfig file
+          command: gpg --pinentry-mode=loopback --passphrase  "" -d -o "./dev_kubeconfig_new.yml" "./dev_kubeconfig_new.yml.gpg"
+      - run:
+          name: Create Kubeconfig directory and Move the Decrypt kubeconfig file to Required Place
+          command: mkdir -p ~/.kube && mkdir -p ~/.kube/config && mv $HOME/project/dev_kubeconfig_new.yml ~/.kube/config
+  aws-profiles-setup:
+    docker:
+      - image: 'circleci/openjdk:11-jdk'
+    steps:
+      - checkout
+      - run:
+          name: Create a Required AWS Configurations Directories and Files
+          command: mkdir -p ~/.aws
+      - run:
+          name: Copy the AWS Profiles to Config Directory
+          command: ""
+      - run:
+          name: Setup the AWS Profiles Credentials
+          command: echo -e "[default]\naws_access_key_id=$AWS_ACCESS_KEY_ID_DEV\naws_secret_access_key=$AWS_SECRET_ACCESS_KEY_DEV\n" > ~/.aws/credentials
 workflows:
-  say-hello-workflow:
+  main:
     jobs:
-      - say-hello
+      - build
+      - aws-profiles-setup
+      - eks-setup:
+          context: observation-databus
