@@ -7,7 +7,7 @@ jobs:
       - checkout
       - run:
           name: Analyze on SonarCloud
-          command: ""
+          command: mkdir test
   eks-setup:
     docker:
       - image: 'circleci/openjdk:11-jdk'
