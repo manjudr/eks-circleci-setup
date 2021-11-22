@@ -9,14 +9,10 @@ jobs:
     steps:
       - checkout
       # Bundle install dependencies
-      - run: bundle install --path vendor/bundle
+      - run: mkdir test
 
       # Database setup
-      - run: bundle exec rake db:create db:schema:load
-
-      - run:
-          name: Run tests
-          command: rake
+      - run: mkdir dummy
 
   deploy:
     machine:
@@ -27,16 +23,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Setup Heroku
-          command: bash .circleci/setup-heroku.sh
-
-      - run:
-          command: |
-            git push heroku sequential-branch-filter:master
-            heroku run rake db:migrate
-            sleep 5 # sleep for 5 seconds to wait for dynos
-            heroku restart
-
+          name: list
+          command: mdkir apps
 workflows:
   version: 2
   build-and-deploy:
