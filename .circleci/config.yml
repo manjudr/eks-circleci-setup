@@ -40,17 +40,18 @@ jobs:
           command: mkdir -p ~/.aws
       - run:
           name: Copy the AWS Profiles to Config Directory
-          command: echo test
+          command: echo
       - run:
           name: Setup the AWS Profiles Credentials
           command: echo -e "[default]\naws_access_key_id=$AWS_ACCESS_KEY_ID_DEV\naws_secret_access_key=$AWS_SECRET_ACCESS_KEY_DEV\n" > ~/.aws/credentials
 workflows:
   main:
     jobs:
-      - eks-setup
-      - aws-profiles-setup
-      - build:
+      - build
+      - aws-profiles-setup:
+          requires: 
+            - build
+      - eks-setup:
           requires:
-            - eks-setup
-            - aws-profiles-setup
+            - build
           context: observation-databus
