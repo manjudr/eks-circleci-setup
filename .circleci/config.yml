@@ -26,7 +26,7 @@ jobs:
             sudo apt-get install helm
       - run:
           name: Decrypt the Encrypted Kubeconfig file
-          command: gpg --pinentry-mode=loopback --passphrase  "" -d -o "./dev_kubeconfig_new.yml" "./dev_kubeconfig_new.yml.gpg"
+          command: gpg --pinentry-mode=loopback --passphrase  "$DECRPYTION_PASSWORD" -d -o "./dev_kubeconfig_new.yml" "./dev_kubeconfig_new.yml.gpg"
       - run:
           name: Create Kubeconfig directory and Move the Decrypt kubeconfig file to Required Place
           command: mkdir -p ~/.kube && mkdir -p ~/.kube/config && mv $HOME/project/dev_kubeconfig_new.yml ~/.kube/config
