@@ -48,6 +48,10 @@ workflows:
   main:
     jobs:
       - build
-      - aws-profiles-setup
+      - aws-profiles-setup:
+          requires: 
+            - build
       - eks-setup:
+          requires:
+            - build
           context: observation-databus
