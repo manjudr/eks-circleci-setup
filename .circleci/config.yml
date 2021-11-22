@@ -40,6 +40,6 @@ workflows:
     jobs:
       - build
       - deploy:
-          -requires:
-            -build
+          requires:
+            - build
           context: observation-databus
