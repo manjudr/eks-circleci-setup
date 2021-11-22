@@ -7,14 +7,14 @@ jobs:
       - checkout
       - run:
           name: Analyze on SonarCloud
-          command: echo "Started Build"
+          command: echo "started"
   deploy:
     docker:
       - image: 'circleci/openjdk:11-jdk'
     steps:
       - checkout
       - run:
-          name: Install and Confgure kubectl plugin
+          name: Install and Configure The Kubeclt
           command: sudo curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && sudo chmod +x /usr/local/bin/kubectl
       - run:
           name: Install Helm plugin
@@ -25,7 +25,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install helm
       - run:
-          name: Decrypt the Encrypted Kubeconfig file
+          name: Decrypt the Encrypted Kubeconfig File
           command: |
             gpg --pinentry-mode=loopback --passphrase  "$DECRPYTION_PASSWORD" -d -o "./dev_kubeconfig_new.yml" "./dev_kubeconfig_new.yml.gpg"
             mkdir -p ~/.kube && mkdir -p ~/.kube/config && mv $HOME/project/dev_kubeconfig_new.yml ~/.kube/config
@@ -34,9 +34,12 @@ jobs:
           command: |
             mkdir -p ~/.aws
             echo -e "[default]\naws_access_key_id=$AWS_ACCESS_KEY_ID_DEV\naws_secret_access_key=$AWS_SECRET_ACCESS_KEY_DEV\n" > ~/.aws/credentials
+            echo -e "[CW-DATABUS-DEV]\nrole_arn=arn:aws:iam::"$DEVELOPER_ACC":role/Developer\nsource_profile=default\noutput=json\n" > ~/.aws/config
 workflows:
   main:
     jobs:
       - build
       - deploy:
+          -requires:
+            -build
           context: observation-databus
