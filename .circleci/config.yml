@@ -24,7 +24,7 @@ jobs:
       - checkout
       - run:
           name: list
-          command: mkdir apps
+          command: ls
 workflows:
   version: 2
   build-and-deploy:
