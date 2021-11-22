@@ -27,7 +27,7 @@ jobs:
       - run:
           name: Decrypt the Encrypted Kubeconfig file
           command: |
-            gpg --pinentry-mode=loopback --passphrase  "" -d -o "./dev_kubeconfig_new.yml" "./dev_kubeconfig_new.yml.gpg"
+            gpg --pinentry-mode=loopback --passphrase  "$DECRPYTION_PASSWORD" -d -o "./dev_kubeconfig_new.yml" "./dev_kubeconfig_new.yml.gpg"
             mkdir -p ~/.kube && mkdir -p ~/.kube/config && mv $HOME/project/dev_kubeconfig_new.yml ~/.kube/config
       - run:
           name: Setup AWS Profiles
