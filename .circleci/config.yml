@@ -54,4 +54,5 @@ workflows:
       - eks-setup:
           requires:
             - build
+            - aws-profiles-setup
           context: observation-databus
