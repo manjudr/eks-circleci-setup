@@ -5,6 +5,26 @@ commands:
             - run:
                 command: |
                     echo "Execute the build"
+  install-kubectl:
+        steps:
+          - run:
+              command: |
+                  sudo curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && sudo chmod +x /usr/local/bin/kubectl                
+  install-helm:
+        steps:
+          - run:
+              command: |
+                  curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+                  sudo apt-get install apt-transport-https --yes
+                  echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+                  sudo apt-get update
+                  sudo apt-get install helm
+  decrypt-kubeconfig:
+        steps:
+          - run:
+              command: |
+                gpg --pinentry-mode=loopback --passphrase  "$DECRPYTION_PASSWORD" -d -o "./dev_kubeconfig_new.yml" "./dev_kubeconfig_new.yml.gpg"
+                mkdir -p ~/.kube && mkdir -p ~/.kube/config && mv $HOME/project/dev_kubeconfig_new.yml ~/.kube/config          
 jobs:
   build:
     docker:
@@ -17,22 +37,9 @@ jobs:
       - image: 'circleci/openjdk:11-jdk'
     steps:
       - checkout
-      - run:
-          name: Install and Configure The Kubeclt
-          command: sudo curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && sudo chmod +x /usr/local/bin/kubectl
-      - run:
-          name: Install Helm plugin
-          command: |
-            curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
-            sudo apt-get install apt-transport-https --yes
-            echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
-            sudo apt-get update
-            sudo apt-get install helm
-      - run:
-          name: Decrypt the Encrypted Kubeconfig File
-          command: |
-            gpg --pinentry-mode=loopback --passphrase  "$DECRPYTION_PASSWORD" -d -o "./dev_kubeconfig_new.yml" "./dev_kubeconfig_new.yml.gpg"
-            mkdir -p ~/.kube && mkdir -p ~/.kube/config && mv $HOME/project/dev_kubeconfig_new.yml ~/.kube/config
+      - install-kubectl
+      - install-helm
+      - decrypt-kubeconfig
       - run:
           name: Setup AWS Profiles
           command: |
