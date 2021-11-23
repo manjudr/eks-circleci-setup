@@ -4,7 +4,7 @@ commands:
     steps:
       - run:
           name: Analyze on SonarCloud
-          command: gradle build sonarqube"
+          command: echo "man"
   install-kubectl:
     steps:
       - run:
