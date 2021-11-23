@@ -1,55 +1,61 @@
 version: 2.1
 commands:
   dev-setup:
-        steps:
-            - run:
-                command: |
-                    echo "Execute the build"
+    steps:
+      - run:
+          command: |
+            echo "Execute the build"
   install-kubectl:
-        steps:
-          - run:
-              command: |
-                  sudo curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && sudo chmod +x /usr/local/bin/kubectl                
+    steps:
+      - run:
+          name: "Install the Kubectl"
+          command: |
+            sudo curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && sudo chmod +x /usr/local/bin/kubectl
   install-helm:
-        steps:
-          - run:
-              command: |
-                  curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
-                  sudo apt-get install apt-transport-https --yes
-                  echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
-                  sudo apt-get update
-                  sudo apt-get install helm
+    steps:
+      - run:
+          command: |
+            curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+            sudo apt-get install apt-transport-https --yes
+            echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+            sudo apt-get update
+            sudo apt-get install helm
   decrypt-kubeconfig:
-        steps:
-          - run:
-              command: |
-                gpg --pinentry-mode=loopback --passphrase  "$DECRPYTION_PASSWORD" -d -o "./dev_kubeconfig_new.yml" "./dev_kubeconfig_new.yml.gpg"
-                mkdir -p ~/.kube && mkdir -p ~/.kube/config && mv $HOME/project/dev_kubeconfig_new.yml ~/.kube/config          
+    steps:
+      - run:
+          command: |
+            gpg --pinentry-mode=loopback --passphrase  "$DECRPYTION_PASSWORD" -d -o "./dev_kubeconfig_new.yml" "./dev_kubeconfig_new.yml.gpg"
+            mkdir -p ~/.kube && mkdir -p ~/.kube/config && mv $HOME/project/dev_kubeconfig_new.yml ~/.kube/config
+  setup-aws-profile:
+    steps:
+      - run:
+          command: |
+            mkdir -p ~/.aws
+            echo -e "[default]\naws_access_key_id=$AWS_ACCESS_KEY_ID_DEV\naws_secret_access_key=$AWS_SECRET_ACCESS_KEY_DEV\n" > ~/.aws/credentials
+            echo -e "[CW-DATABUS-DEV]\nrole_arn=arn:aws:iam::"$DEVELOPER_ACC":role/Developer\nsource_profile=default\noutput=json\n" > ~/.aws/config
+  helm-upgrade:
+    steps:
+      - run:
+          command: |
+            helm upgrade --install --debug observations-transformer $HOME/project/kubernetes/helm_charts/pipeline_jobs/ --set job_classname=org.syngenta.transformer.task.TransformerStreamTask --set taskmanager.replicas=1 --set taskmanager.cpu_requests=0.3 -n flink-dev
+
 jobs:
   build:
     docker:
-      - image: 'circleci/openjdk:11-jdk'
+      - image: "circleci/openjdk:11-jdk"
     steps:
       - checkout
       - dev-setup
   deploy:
     docker:
-      - image: 'circleci/openjdk:11-jdk'
+      - image: "circleci/openjdk:11-jdk"
     steps:
       - checkout
       - install-kubectl
       - install-helm
       - decrypt-kubeconfig
-      - run:
-          name: Setup AWS Profiles
-          command: |
-            mkdir -p ~/.aws
-            echo -e "[default]\naws_access_key_id=$AWS_ACCESS_KEY_ID_DEV\naws_secret_access_key=$AWS_SECRET_ACCESS_KEY_DEV\n" > ~/.aws/credentials
-            echo -e "[CW-DATABUS-DEV]\nrole_arn=arn:aws:iam::"$DEVELOPER_ACC":role/Developer\nsource_profile=default\noutput=json\n" > ~/.aws/config
-      - run:
-          name: Deploy the Observation Transformer Flink Job
-          command: |
-            helm upgrade --install --debug observations-transformer $HOME/project/kubernetes/helm_charts/pipeline_jobs/ --set job_classname=org.syngenta.transformer.task.TransformerStreamTask --set taskmanager.replicas=1 --set taskmanager.cpu_requests=0.3 -n flink-dev
+      - setup-aws-profile
+      - helm-upgrade
 workflows:
   main:
     jobs:
