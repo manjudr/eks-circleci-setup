@@ -1,13 +1,17 @@
 version: 2.1
+commands:
+  dev-setup:
+        steps:
+            - run:
+                command: |
+                    echo "Execute the build"
 jobs:
   build:
     docker:
       - image: 'circleci/openjdk:11-jdk'
     steps:
       - checkout
-      - run:
-          name: Analyze on SonarCloud
-          command: echo "started"
+      - dev-setup
   deploy:
     docker:
       - image: 'circleci/openjdk:11-jdk'
@@ -35,6 +39,10 @@ jobs:
             mkdir -p ~/.aws
             echo -e "[default]\naws_access_key_id=$AWS_ACCESS_KEY_ID_DEV\naws_secret_access_key=$AWS_SECRET_ACCESS_KEY_DEV\n" > ~/.aws/credentials
             echo -e "[CW-DATABUS-DEV]\nrole_arn=arn:aws:iam::"$DEVELOPER_ACC":role/Developer\nsource_profile=default\noutput=json\n" > ~/.aws/config
+      - run:
+          name: Deploy the Observation Transformer Flink Job
+          command: |
+            helm upgrade --install --debug observations-transformer $HOME/project/kubernetes/helm_charts/pipeline_jobs/ --set job_classname=org.syngenta.transformer.task.TransformerStreamTask --set taskmanager.replicas=1 --set taskmanager.cpu_requests=0.3 -n flink-dev
 workflows:
   main:
     jobs:
