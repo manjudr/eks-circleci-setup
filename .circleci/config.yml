@@ -8,12 +8,13 @@ commands:
   install-kubectl:
     steps:
       - run:
-          name: "Install the Kubectl"
+          name: Install and Configure The Kubectl
           command: |
             sudo curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && sudo chmod +x /usr/local/bin/kubectl
   install-helm:
     steps:
       - run:
+          name: Install Helm plugin
           command: |
             curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
             sudo apt-get install apt-transport-https --yes
@@ -23,12 +24,14 @@ commands:
   decrypt-kubeconfig:
     steps:
       - run:
+          name: Decrypt the Encrypted Kubeconfig File
           command: |
             gpg --pinentry-mode=loopback --passphrase  "$DECRPYTION_PASSWORD" -d -o "./dev_kubeconfig_new.yml" "./dev_kubeconfig_new.yml.gpg"
             mkdir -p ~/.kube && mkdir -p ~/.kube/config && mv $HOME/project/dev_kubeconfig_new.yml ~/.kube/config
   setup-aws-profile:
     steps:
       - run:
+          name: Setup AWS Profiles
           command: |
             mkdir -p ~/.aws
             echo -e "[default]\naws_access_key_id=$AWS_ACCESS_KEY_ID_DEV\naws_secret_access_key=$AWS_SECRET_ACCESS_KEY_DEV\n" > ~/.aws/credentials
@@ -36,6 +39,7 @@ commands:
   helm-upgrade:
     steps:
       - run:
+          name: Deploy the Observation Transformer Flink Job
           command: |
             helm upgrade --install --debug observations-transformer $HOME/project/kubernetes/helm_charts/pipeline_jobs/ --set job_classname=org.syngenta.transformer.task.TransformerStreamTask --set taskmanager.replicas=1 --set taskmanager.cpu_requests=0.3 -n flink-dev
 
